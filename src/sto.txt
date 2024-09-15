@@ -1,0 +1,113 @@
+import React, { useState, useEffect } from 'react';
+import Chart from 'react-apexcharts';
+import { fetchStockData, fetchStockValue } from './service';
+import { formatStockData } from './utils';
+
+const CombinedChart = (symbol) => {
+  const [startDate, setStartDate] = useState('2023-01-01');
+  const [endDate, setEndDate] = useState('2023-12-31');
+  const [interval, setInterval] = useState('day');
+  const [options, setOptions] = useState({});
+  const [series, setSeries] = useState([]);
+  const [candlestickData, setCandlestickData] = useState([])
+  const [lineData, setLineData] = useState([])
+  useEffect(() => {
+    fetchStockData("IBM").then( data=>{
+      setCandlestickData( data )
+    });
+    fetchStockValue().then( data => {
+      setLineData( data )
+    });
+    setSeries([
+      {
+        name: 'Candlestick Data',
+        type: 'candlestick',
+        data: formatStockData(candlestickData),
+      },
+      {
+        name: 'Line Data',
+        type: 'line',
+        data: formatStockData(lineData),
+      },
+    ]);
+
+    setOptions({
+      chart: {
+        height: 350,
+        type: 'candlestick',
+        toolbar: {
+          show: true
+        },
+      },
+      title: {
+        text: 'Combined Candlestick and Line Chart',
+        align: 'left'
+      },
+      xaxis: {
+        type: 'datetime',
+      },
+      yaxis: [
+        {
+          tooltip: {
+            enabled: true
+          }
+        },
+        {
+          opposite: true
+        }
+      ],
+    });
+  }, [startDate, endDate, interval]);
+
+
+  const handleDateChange = (event, isStart) => {
+    const date = event.target.value;
+    if (isStart) {
+      setStartDate(date);
+    } else {
+      setEndDate(date);
+    }
+  };
+
+  const handleIntervalChange = (event) => {
+    setInterval(event.target.value);
+  };
+
+  return (
+    <div>
+      <div>
+        <label>Start Date: </label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => handleDateChange(e, true)}
+        />
+        <label>End Date: </label>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => handleDateChange(e, false)}
+        />
+        <label>Interval: </label>
+        <select value={interval} onChange={handleIntervalChange}>
+          <option value="minute">Minute</option>
+          <option value="hour">Hour</option>
+          <option value="day">Day</option>
+          <option value="week">Week</option>
+          <option value="month">Month</option>
+        </select>
+      </div>
+      <div>
+        <h2>Combined Candlestick and Line Chart</h2>
+        <Chart
+          options={options}
+          series={series}
+          type="candlestick"
+          height={350}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default CombinedChart;

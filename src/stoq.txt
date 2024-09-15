@@ -1,0 +1,86 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Chart from 'react-apexcharts';
+
+const API_KEY = 'YOUR_ALPHA_VANTAGE_API_KEY';
+const STOCK_SYMBOL = 'AAPL';
+
+const fetchStockData = async () => {
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol=${STOCK_SYMBOL}&apikey=${API_KEY}`;
+  const response = await axios.get(url);
+  return response.data;
+};
+
+const formatStockData = (stockData) => {
+  const formattedData = [];
+
+  if (stockData['Weekly Adjusted Time Series']) {
+    Object.entries(stockData['Weekly Adjusted Time Series']).map(([key, value]) => {
+      formattedData.push({
+        x: new Date(key),
+        y: [
+          parseFloat(value['1. open']),
+          parseFloat(value['2. high']),
+          parseFloat(value['3. low']),
+          parseFloat(value['4. close']),
+        ],
+      });
+    });
+  }
+  return formattedData;
+};
+
+const StockChart = () => {
+  const [series, setSeries] = useState([]);
+  const [options, setOptions] = useState({
+    chart: {
+      type: 'candlestick',
+      height: 350,
+    },
+    title: {
+      text: 'Stock Price',
+      align: 'left',
+    },
+    xaxis: {
+      type: 'datetime',
+    },
+    yaxis: {
+      tooltip: {
+        enabled: true,
+      },
+    },
+  });
+
+  useEffect(() => {
+    const getStockData = async () => {
+      const stockData = await fetchStockData();
+      const formattedData = formatStockData(stockData);
+
+      setSeries([
+        {
+          name: 'Candlestick',
+          type: 'candlestick',
+          data: formattedData,
+        },
+        {
+          name: 'Line',
+          type: 'line',
+          data: formattedData.map((item) => ({
+            x: item.x,
+            y: item.y[3], // Use closing price for line chart
+          })),
+        },
+      ]);
+    };
+
+    getStockData();
+  }, []);
+
+  return (
+    <div>
+      <Chart options={options} series={series} type="candlestick" height={350} />
+    </div>
+  );
+};
+
+export default StockChart;
